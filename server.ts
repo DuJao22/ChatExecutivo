@@ -80,14 +80,22 @@ async function initDB() {
 }
 
 async function startServer() {
-  await initDB();
+  console.log("Iniciando o servidor...");
+  
+  try {
+    console.log("Conectando ao banco de dados SQLiteCloud...");
+    await initDB();
+    console.log("Banco de dados sincronizado com sucesso!");
+  } catch (error) {
+    console.error("ERRO CRÍTICO: Falha ao conectar ou inicializar o banco de dados:", error);
+  }
 
   const app = express();
   const server = createServer(app);
   const io = new Server(server, {
     cors: { origin: '*' }
   });
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   app.use(express.json());
 
@@ -303,8 +311,11 @@ async function startServer() {
   }
 
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 
-startServer();
+startServer().catch(error => {
+  console.error("Erro fatal ao iniciar o servidor:", error);
+  process.exit(1);
+});
