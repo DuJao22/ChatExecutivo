@@ -19,10 +19,10 @@ export default function AdminLogin() {
         body: JSON.stringify({ phone, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao fazer login');
+        throw new Error(data.error || res.statusText || 'Erro ao fazer login');
       }
 
       if (data.role === 'admin') {

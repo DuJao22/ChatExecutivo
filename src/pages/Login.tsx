@@ -5,8 +5,34 @@ import { MessageSquare } from 'lucide-react';
 export default function Login() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [step, setStep] = useState<'phone' | 'password'>('phone');
+  const [user, setUser] = useState<any>(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const handleCheckUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      const res = await fetch('/api/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Usuário não encontrado.');
+      }
+
+      setUser(data);
+      setStep('password');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,10 +45,10 @@ export default function Login() {
         body: JSON.stringify({ phone, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao fazer login');
+        throw new Error(data.error || res.statusText || 'Erro ao fazer login');
       }
 
       if (data.role === 'admin') {
@@ -45,53 +71,83 @@ export default function Login() {
             <MessageSquare className="w-8 h-8 text-emerald-600" />
           </div>
           <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">Bem-vindo 👋</h1>
-          <p className="text-zinc-500">Digite seu telefone e senha para acessar o atendimento exclusivo.</p>
+          <p className="text-zinc-500">
+            {step === 'phone' 
+              ? 'Digite seu telefone para continuar.' 
+              : `Olá, ${user?.name}. Digite sua senha.`}
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-2">
-              Telefone
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="(00) 00000-0000"
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-2">
-              Senha
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Sua senha"
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
-              {error}
+        {step === 'phone' ? (
+          <form onSubmit={handleCheckUser} className="space-y-6">
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-2">
+                Telefone
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(00) 00000-0000"
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                required
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl transition-colors"
-          >
-            Entrar no Chat
-          </button>
-        </form>
+            {error && (
+              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl transition-colors"
+            >
+              Continuar
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-2">
+                Senha
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Sua senha"
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setStep('phone')}
+                className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-medium py-3 px-4 rounded-xl transition-colors"
+              >
+                Voltar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl transition-colors"
+              >
+                Entrar
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

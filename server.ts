@@ -102,6 +102,18 @@ async function startServer() {
   // --- API Routes ---
 
   // Auth
+  app.post('/api/check-user', async (req, res) => {
+    const { phone } = req.body;
+    const users = await db.sql('SELECT id, name, role FROM users WHERE phone = ?', [phone]);
+    const user = users && users.length > 0 ? users[0] : null;
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+    
+    res.json(user);
+  });
+
   app.post('/api/login', async (req, res) => {
     const { phone, password } = req.body;
     const users = await db.sql('SELECT * FROM users WHERE phone = ? AND password = ?', [phone, password]);
