@@ -73,9 +73,9 @@ async function initDB() {
   // Seed Admin
   const adminExists = await db.sql("SELECT id FROM users WHERE role = 'admin'");
   if (!adminExists || adminExists.length === 0) {
-    await db.sql("INSERT INTO users (name, phone, password, role) VALUES (?, ?, ?, ?)", ['Admin', '31990780959', '3003', 'admin']);
+    await db.sql("INSERT INTO users (name, phone, password, role) VALUES (?, ?, ?, ?)", ['Admin', '30031936', '30031936', 'admin']);
   } else {
-    await db.sql("UPDATE users SET phone = ?, password = ? WHERE role = 'admin'", ['31990780959', '3003']);
+    await db.sql("UPDATE users SET phone = ?, password = ? WHERE role = 'admin'", ['30031936', '30031936']);
   }
 }
 
