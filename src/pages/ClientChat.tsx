@@ -131,8 +131,15 @@ export default function ClientChat() {
     }
   };
 
+  const [paymentMethod, setPaymentMethod] = useState<'na_hora' | 'no_prazo'>('na_hora');
+  const [paymentDate, setPaymentDate] = useState('');
+
   const submitOrder = async () => {
     if (cart.length === 0) return;
+    if (paymentMethod === 'no_prazo' && !paymentDate) {
+      alert('Por favor, selecione a data de pagamento.');
+      return;
+    }
 
     try {
       const res = await fetch('/api/orders', {
@@ -141,7 +148,9 @@ export default function ClientChat() {
         body: JSON.stringify({
           client_id: client.id,
           total: cartTotal,
-          items: cart.map(item => ({ product_id: item.id, quantity: item.quantity, price: item.price }))
+          items: cart.map(item => ({ product_id: item.id, quantity: item.quantity, price: item.price })),
+          payment_method: paymentMethod,
+          payment_date: paymentMethod === 'no_prazo' ? paymentDate : null
         })
       });
 
@@ -152,6 +161,7 @@ export default function ClientChat() {
           orderDetails += `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}\n`;
         });
         orderDetails += `\n*Total: R$ ${cartTotal.toFixed(2)}*`;
+        orderDetails += `\n*Pagamento: ${paymentMethod === 'na_hora' ? 'Na hora' : `No prazo (Data: ${paymentDate})` }*`;
 
         setCart([]);
         setShowCart(false);
@@ -344,6 +354,31 @@ export default function ClientChat() {
                       </div>
                     </div>
                   ))}
+                  <div className="bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm space-y-3">
+                    <h4 className="font-bold text-zinc-900">Método de Pagamento</h4>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setPaymentMethod('na_hora')}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium ${paymentMethod === 'na_hora' ? 'bg-emerald-600 text-white' : 'bg-zinc-100 text-zinc-700'}`}
+                      >
+                        Na hora
+                      </button>
+                      <button 
+                        onClick={() => setPaymentMethod('no_prazo')}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium ${paymentMethod === 'no_prazo' ? 'bg-emerald-600 text-white' : 'bg-zinc-100 text-zinc-700'}`}
+                      >
+                        No prazo
+                      </button>
+                    </div>
+                    {paymentMethod === 'no_prazo' && (
+                      <input 
+                        type="date"
+                        value={paymentDate}
+                        onChange={(e) => setPaymentDate(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    )}
+                  </div>
                 </div>
               )}
             </div>

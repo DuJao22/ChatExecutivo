@@ -73,7 +73,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (selectedChat) {
-      fetch(`/api/messages/\${selectedChat.id}`)
+      fetch(`/api/messages/${selectedChat.id}`)
         .then(res => res.json())
         .then(data => setMessages(data));
     }
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
   };
 
   const updateOrderStatus = async (orderId: number, status: string) => {
-    await fetch(`/api/orders/\${orderId}/status`, {
+    await fetch(`/api/orders/${orderId}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
@@ -141,7 +141,7 @@ export default function AdminDashboard() {
 
   const toggleClientStatus = async (clientId: number, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
-    await fetch(`/api/clients/\${clientId}/status`, {
+    await fetch(`/api/clients/${clientId}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
@@ -173,6 +173,10 @@ export default function AdminDashboard() {
 
     setNewMessage('');
   };
+
+  const deliveredRevenue = orders
+    .filter(o => o.status === 'delivered')
+    .reduce((sum, o) => sum + o.total, 0);
 
   if (!admin) return null;
 
@@ -240,6 +244,14 @@ export default function AdminDashboard() {
         </header>
 
         <div className="flex-1 overflow-auto p-4 lg:p-8">
+          {activeTab === 'orders' && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                <h3 className="text-sm font-medium text-zinc-500">Faturamento (Entregues)</h3>
+                <p className="text-3xl font-bold text-emerald-600 mt-2">R$ {deliveredRevenue.toFixed(2)}</p>
+              </div>
+            </div>
+          )}
           
           {/* CHATS TAB */}
           {activeTab === 'chats' && (
@@ -340,12 +352,12 @@ export default function AdminDashboard() {
                         <div className="text-right">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
                             ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : ''}
-                            ${order.status === 'preparing' ? 'bg-blue-100 text-blue-700' : ''}
-                            ${order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : ''}
+                            ${order.status === 'confirmed' ? 'bg-blue-100 text-blue-700' : ''}
+                            ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : ''}
                             ${order.status === 'cancelled' ? 'bg-red-100 text-red-700' : ''}
                           `}>
                             {order.status === 'pending' && <Clock className="w-3 h-3" />}
-                            {order.status === 'completed' && <CheckCircle2 className="w-3 h-3" />}
+                            {order.status === 'delivered' && <CheckCircle2 className="w-3 h-3" />}
                             {order.status === 'cancelled' && <XCircle className="w-3 h-3" />}
                             {order.status}
                           </span>
@@ -368,12 +380,12 @@ export default function AdminDashboard() {
                       <div className="flex gap-2 justify-end">
                         {order.status === 'pending' && (
                           <>
-                            <button onClick={() => updateOrderStatus(order.id, 'preparing')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Aprovar (Em preparo)</button>
+                            <button onClick={() => updateOrderStatus(order.id, 'confirmed')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Confirmar Pedido</button>
                             <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200">Cancelar</button>
                           </>
                         )}
-                        {order.status === 'preparing' && (
-                          <button onClick={() => updateOrderStatus(order.id, 'completed')} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Marcar Concluído</button>
+                        {order.status === 'confirmed' && (
+                          <button onClick={() => updateOrderStatus(order.id, 'delivered')} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Confirmar Entrega</button>
                         )}
                       </div>
                     </div>

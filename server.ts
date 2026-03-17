@@ -53,10 +53,16 @@ async function initDB() {
       client_id INTEGER NOT NULL,
       total REAL NOT NULL,
       status TEXT DEFAULT 'pending',
+      payment_method TEXT,
+      payment_date TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (client_id) REFERENCES users(id)
     );
   `);
+
+  // Add columns if they don't exist (for existing databases)
+  try { await db.sql("ALTER TABLE orders ADD COLUMN payment_method TEXT"); } catch (e) {}
+  try { await db.sql("ALTER TABLE orders ADD COLUMN payment_date TEXT"); } catch (e) {}
 
   await db.sql(`
     CREATE TABLE IF NOT EXISTS order_items (
@@ -181,11 +187,11 @@ async function startServer() {
 
   // Orders
   app.post('/api/orders', async (req, res) => {
-    const { client_id, total, items } = req.body;
+    const { client_id, total, items, payment_method, payment_date } = req.body;
     
     try {
       await db.sql('BEGIN TRANSACTION');
-      const orderRes = await db.sql('INSERT INTO orders (client_id, total) VALUES (?, ?) RETURNING id', [client_id, total]);
+      const orderRes = await db.sql('INSERT INTO orders (client_id, total, payment_method, payment_date) VALUES (?, ?, ?, ?) RETURNING id', [client_id, total, payment_method, payment_date]);
       const orderId = orderRes[0].id;
 
       for (const item of items) {
