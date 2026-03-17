@@ -8,9 +8,6 @@ import path from 'path';
 const db = new Database('sqlitecloud://cmq6frwshz.g4.sqlite.cloud:8860/ChatExecutivo.db?apikey=Dor8OwUECYmrbcS5vWfsdGpjCpdm9ecSDJtywgvRw8k');
 
 async function initDB() {
-  try { await db.sql("ALTER TABLE users ADD COLUMN password TEXT DEFAULT '123456'"); } catch (e) {}
-  try { await db.sql("ALTER TABLE users ADD COLUMN nickname TEXT"); } catch (e) {}
-
   await db.sql(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,9 +57,16 @@ async function initDB() {
     );
   `);
 
-  // Add columns if they don't exist (for existing databases)
-  try { await db.sql("ALTER TABLE orders ADD COLUMN payment_method TEXT"); } catch (e) {}
-  try { await db.sql("ALTER TABLE orders ADD COLUMN payment_date TEXT"); } catch (e) {}
+  // Robust column addition
+  const columns = await db.sql("PRAGMA table_info(orders)");
+  const hasPaymentMethod = columns.some((col: any) => col.name === 'payment_method');
+  if (!hasPaymentMethod) {
+    await db.sql("ALTER TABLE orders ADD COLUMN payment_method TEXT");
+  }
+  const hasPaymentDate = columns.some((col: any) => col.name === 'payment_date');
+  if (!hasPaymentDate) {
+    await db.sql("ALTER TABLE orders ADD COLUMN payment_date TEXT");
+  }
 
   await db.sql(`
     CREATE TABLE IF NOT EXISTS order_items (
@@ -191,8 +195,9 @@ async function startServer() {
     
     try {
       await db.sql('BEGIN TRANSACTION');
-      const orderRes = await db.sql('INSERT INTO orders (client_id, total, payment_method, payment_date) VALUES (?, ?, ?, ?) RETURNING id', [client_id, total, payment_method, payment_date]);
-      const orderId = orderRes[0].id;
+      await db.sql('INSERT INTO orders (client_id, total, payment_method, payment_date) VALUES (?, ?, ?, ?)', [client_id, total, payment_method, payment_date]);
+      const orderIdRes = await db.sql('SELECT last_insert_rowid() as id');
+      const orderId = orderIdRes[0].id;
 
       for (const item of items) {
         await db.sql('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)', [orderId, item.product_id, item.quantity, item.price]);
